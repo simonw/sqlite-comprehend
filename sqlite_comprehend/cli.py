@@ -28,7 +28,7 @@ def cli():
 )
 @click.option("-o", "--output", help="Custom output table")
 @click.option(
-    "-r", "--reset", is_flag=True, help="Start from scratch, ignoring previous results"
+    "-r", "--reset", is_flag=True, help="Start from scratch, deleting previous results"
 )
 @common_boto3_options
 def entities(database, table, columns, where, params, output, reset, **boto_options):
