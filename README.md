@@ -31,9 +31,11 @@ You can also used named parameters in your `--where` clause:
 
     sqlite-comprehend sfms.db pages text --where 'id < :maxid' -p maxid 10
 
+Only the first 5,000 characters for each row will be considered. Be sure to review [Comprehend's pricing](https://aws.amazon.com/comprehend/pricing/) - which starts at $0.0001 per hundred characters.
+
 ## Schema
 
-The tables creatyd by this tool have the following schema:
+The tables created by this tool have the following schema:
 
 ```sql
 CREATE TABLE [comprehend_entity_types] (
