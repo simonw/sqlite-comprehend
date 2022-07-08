@@ -1,5 +1,6 @@
 import click
 import sqlite_utils
+import json
 from sqlite_utils.utils import chunks
 from .utils import common_boto3_options, make_client
 
@@ -129,8 +130,6 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
     if where_clauses:
         sql += " where " + " and ".join(where_clauses)
 
-    print(sql)
-
     rows = db.query(sql, params=dict(params))
 
     # Run a count, for the progress bar
@@ -161,6 +160,21 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
             response = comprehend.batch_detect_entities(
                 TextList=texts, LanguageCode="en"
             )
+            if response.get("ErrorList"):
+                # Match errors to documents
+                errors_by_index = {
+                    error["Index"]: error for error in response["ErrorList"]
+                }
+                for i, row in enumerate(chunk):
+                    if i in errors_by_index:
+                        click.echo(
+                            "{}: Error: {}".format(
+                                json.dumps({pk: row[pk] for pk in pks}),
+                                json.dumps(errors_by_index[i]),
+                            ),
+                            err=True,
+                        )
+
             results = response["ResultList"]
             # Match those to their primary keys and insert into output_table
             # we match on Index because we cannot guarantee that every document
