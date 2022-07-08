@@ -48,18 +48,22 @@ CREATE TABLE [comprehend_entity_types] (
    [id] INTEGER PRIMARY KEY,
    [value] TEXT
 );
-
-CREATE UNIQUE INDEX [idx_comprehend_entity_types_value]
-    ON [comprehend_entity_types] ([value]);
-
+CREATE TABLE [comprehend_entities] (
+   [id] INTEGER PRIMARY KEY,
+   [name] TEXT,
+   [type] INTEGER REFERENCES [comprehend_entity_types]([id])
+);
 CREATE TABLE [pages_comprehend_entities] (
    [id] TEXT REFERENCES [pages]([id]),
    [score] FLOAT,
-   [type] INTEGER REFERENCES [comprehend_entity_types]([id]),
-   [text] TEXT,
+   [entity] INTEGER REFERENCES [comprehend_entities]([id]),
    [begin_offset] INTEGER,
    [end_offset] INTEGER
 );
+CREATE UNIQUE INDEX [idx_comprehend_entity_types_value]
+    ON [comprehend_entity_types] ([value]);
+CREATE UNIQUE INDEX [idx_comprehend_entities_type_name]
+    ON [comprehend_entities] ([type], [name]);
 ```
 ## Development
 

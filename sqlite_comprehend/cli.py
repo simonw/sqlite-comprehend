@@ -27,8 +27,11 @@ def cli():
     help="Named :parameters for SQL query",
 )
 @click.option("-o", "--output", help="Custom output table")
+@click.option(
+    "-r", "--reset", is_flag=True, help="Start from scratch, ignoring previous results"
+)
 @common_boto3_options
-def entities(database, table, columns, where, params, output, **boto_options):
+def entities(database, table, columns, where, params, output, reset, **boto_options):
     """
     To extract entities from columns text1 and text2 in mytable:
 
@@ -52,7 +55,13 @@ def entities(database, table, columns, where, params, output, **boto_options):
         )
     pks = db[table].pks
     # Create table to write to
-    output = output or "{}_comprehend_entities".format(table)
+    output_table = output or "{}_comprehend_entities".format(table)
+
+    if reset:
+        db[output_table].drop(True)
+        db["comprehend_entity_types"].drop(True)
+        db["comprehend_entities"].drop(True)
+
     if not db["comprehend_entity_types"].exists():
         db["comprehend_entity_types"].create(
             {
@@ -61,26 +70,41 @@ def entities(database, table, columns, where, params, output, **boto_options):
             },
             pk="id",
         )
-    if not db[output].exists():
+
+    entities_table = db.table("comprehend_entities")
+    if not entities_table.exists():
+        entities_table.create(
+            {"id": int, "name": str, "type": int},
+            pk="id",
+            foreign_keys=[("type", "comprehend_entity_types", "id")],
+        )
+
+    if not db[output_table].exists():
         # Start with columns for the primary keys in the main table
         column_definitions = {pk: db[table].columns_dict[pk] for pk in pks}
-        # TODO: what if a primary key clashes with the next columns?
+        reserved_columns = {"score", "entity", "begin_offset", "end_offset"}
+        if set(pks).intersection(reserved_columns):
+            raise click.ClickException(
+                "Primary keys {} overlap with reserved columns: {}".format(
+                    ", ".join(pks), ", ".join(reserved_columns)
+                )
+            )
+
         column_definitions.update(
             {
                 "score": float,
-                "type": int,
-                "text": str,
+                "entity": int,
                 "begin_offset": int,
                 "end_offset": int,
             }
         )
         foreign_keys = [
-            ("type", "comprehend_entity_types", "id"),
+            ("entity", "comprehend_entities", "id"),
         ]
         if len(pks) == 1:
             pk = pks[0]
             foreign_keys.append((pk, table, pk))
-        db[output].create(column_definitions, foreign_keys=foreign_keys)
+        db[output_table].create(column_definitions, foreign_keys=foreign_keys)
 
     # Build the SQL query
     sql = "select {} from {}".format(
@@ -118,7 +142,7 @@ def entities(database, table, columns, where, params, output, **boto_options):
                 TextList=texts, LanguageCode="en"
             )
             results = response["ResultList"]
-            # Match those to their primary keys and insert into output table
+            # Match those to their primary keys and insert into output_table
             to_insert = []
             for row, result in zip(chunk, results):
                 entities = result["Entities"]
@@ -128,14 +152,20 @@ def entities(database, table, columns, where, params, output, **boto_options):
                         dict(
                             **pk_values,
                             score=entity["Score"],
-                            type=entity["Type"],
-                            text=entity["Text"],
+                            entity=entities_table.lookup(
+                                {
+                                    "type": db["comprehend_entity_types"].lookup(
+                                        {"value": entity["Type"]}
+                                    ),
+                                    "name": entity["Text"],
+                                }
+                            ),
                             begin_offset=entity["BeginOffset"],
                             end_offset=entity["EndOffset"],
                         )
                         for entity in entities
                     ]
                 )
-            db[output].insert_all(
+            db[output_table].insert_all(
                 to_insert, extracts={"type": "comprehend_entity_types"}
             )
