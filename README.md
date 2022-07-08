@@ -41,9 +41,74 @@ Only the first 5,000 characters for each row will be considered. Be sure to revi
 
 ## Schema
 
-The tables created by this tool have the following schema:
+Assuming an input table called `pages` the tables created by this tool will have the following schema:
 
+<!-- [[[cog
+import cog, json
+from sqlite_comprehend import cli
+from unittest.mock import patch
+from click.testing import CliRunner
+import sqlite_utils
+import tempfile, pathlib
+tmpdir = pathlib.Path(tempfile.mkdtemp())
+db_path = str(tmpdir / "data.db")
+db = sqlite_utils.Database(db_path)
+db["pages"].insert_all(
+    [
+        {
+            "id": 1,
+            "text": "John Bob",
+        },
+        {
+            "id": 2,
+            "text": "Sandra X",
+        },
+    ],
+    pk="id",
+)
+with patch('boto3.client') as client:
+    client.return_value.batch_detect_entities.return_value = {
+        "ResultList": [
+            {
+                "Index": 0,
+                "Entities": [
+                    {
+                        "Score": 0.8,
+                        "Type": "PERSON",
+                        "Text": "John Bob",
+                        "BeginOffset": 0,
+                        "EndOffset": 5,
+                    },
+                ],
+            },
+            {
+                "Index": 1,
+                "Entities": [
+                    {
+                        "Score": 0.8,
+                        "Type": "PERSON",
+                        "Text": "Sandra X",
+                        "BeginOffset": 0,
+                        "EndOffset": 5,
+                    },
+                ],
+            },
+        ],
+        "ErrorList": [],
+    }
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, [
+        "entities", db_path, "pages", "text"
+    ])
+cog.out("```sql\n")
+cog.out(db.schema)
+cog.out("\n```")
+]]] -->
 ```sql
+CREATE TABLE [pages] (
+   [id] INTEGER PRIMARY KEY,
+   [text] TEXT
+);
 CREATE TABLE [comprehend_entity_types] (
    [id] INTEGER PRIMARY KEY,
    [value] TEXT
@@ -54,7 +119,7 @@ CREATE TABLE [comprehend_entities] (
    [type] INTEGER REFERENCES [comprehend_entity_types]([id])
 );
 CREATE TABLE [pages_comprehend_entities] (
-   [id] TEXT REFERENCES [pages]([id]),
+   [id] INTEGER REFERENCES [pages]([id]),
    [score] FLOAT,
    [entity] INTEGER REFERENCES [comprehend_entities]([id]),
    [begin_offset] INTEGER,
@@ -65,6 +130,8 @@ CREATE UNIQUE INDEX [idx_comprehend_entity_types_value]
 CREATE UNIQUE INDEX [idx_comprehend_entities_type_name]
     ON [comprehend_entities] ([type], [name]);
 ```
+<!-- [[[end]]] -->
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:
