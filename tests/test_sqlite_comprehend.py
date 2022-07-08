@@ -59,6 +59,7 @@ def test_entities(mocker, tmpdir):
             "comprehend_entity_types",
             "comprehend_entities",
             "pages_comprehend_entities",
+            "pages_comprehend_entities_done",
         }
         entities = list(
             db.query(
@@ -95,6 +96,11 @@ def test_entities(mocker, tmpdir):
                 "entity_type": "PERSON",
             },
         ]
+        assert [r for r in db["pages_comprehend_entities_done"].rows] == [
+            {"id": 1},
+            {"id": 2},
+        ]
+
         assert boto3.mock_calls == [
             call("comprehend"),
             call().batch_detect_entities(

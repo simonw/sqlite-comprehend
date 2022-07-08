@@ -173,6 +173,9 @@ CREATE UNIQUE INDEX [idx_comprehend_entity_types_value]
     ON [comprehend_entity_types] ([value]);
 CREATE UNIQUE INDEX [idx_comprehend_entities_type_name]
     ON [comprehend_entities] ([type], [name]);
+CREATE TABLE [pages_comprehend_entities_done] (
+   [id] INTEGER PRIMARY KEY REFERENCES [pages]([id])
+);
 ```
 <!-- [[[end]]] -->
 

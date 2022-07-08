@@ -58,9 +58,11 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
     pks = db[table].pks
     # Create table to write to
     output_table = output or "{}_comprehend_entities".format(table)
+    done_table = "{}_done".format(output_table)
 
     if reset:
         db[output_table].drop(True)
+        db[done_table].drop(True)
         db["comprehend_entity_types"].drop(True)
         db["comprehend_entities"].drop(True)
 
@@ -147,29 +149,41 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
             )
             results = response["ResultList"]
             # Match those to their primary keys and insert into output_table
+            # we match on Index because we cannot guarantee that every document
+            # has an item in ResultList, since there may have been errors
+            results_by_index = {
+                result["Index"]: result["Entities"] for result in results
+            }
             to_insert = []
-            for row, result in zip(chunk, results):
-                entities = result["Entities"]
+            for i, row in enumerate(chunk):
                 pk_values = {pk: row[pk] for pk in pks}
-                to_insert.extend(
-                    [
-                        dict(
-                            **pk_values,
-                            score=entity["Score"],
-                            entity=entities_table.lookup(
-                                {
-                                    "type": db["comprehend_entity_types"].lookup(
-                                        {"value": entity["Type"]}
-                                    ),
-                                    "name": entity["Text"],
-                                }
-                            ),
-                            begin_offset=entity["BeginOffset"],
-                            end_offset=entity["EndOffset"],
-                        )
-                        for entity in entities
-                    ]
+                entities = results_by_index.get(i, [])
+                if entities:
+                    to_insert.extend(
+                        [
+                            dict(
+                                **pk_values,
+                                score=entity["Score"],
+                                entity=entities_table.lookup(
+                                    {
+                                        "type": db["comprehend_entity_types"].lookup(
+                                            {"value": entity["Type"]}
+                                        ),
+                                        "name": entity["Text"],
+                                    }
+                                ),
+                                begin_offset=entity["BeginOffset"],
+                                end_offset=entity["EndOffset"],
+                            )
+                            for entity in entities
+                        ]
+                    )
+            if to_insert:
+                db[output_table].insert_all(
+                    to_insert, extracts={"type": "comprehend_entity_types"}
                 )
-            db[output_table].insert_all(
-                to_insert, extracts={"type": "comprehend_entity_types"}
+            db[done_table].insert_all(
+                [{pk: row[pk] for pk in pks} for row in chunk],
+                pk=pks,
+                foreign_keys=[(pks[0], table, pks[0])] if len(pks) == 1 else [],
             )
