@@ -32,6 +32,6 @@ setup(
         sqlite-comprehend=sqlite_comprehend.cli:cli
     """,
     install_requires=["click", "boto3", "sqlite-utils"],
-    extras_require={"test": ["pytest"]},
+    extras_require={"test": ["pytest", "pytest-mock"]},
     python_requires=">=3.7",
 )

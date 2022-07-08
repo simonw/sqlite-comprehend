@@ -133,9 +133,11 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
                 concat_utf8 = (
                     " ".join((row[column] or "") for column in columns)
                 ).encode("utf-8")
-                truncated = concat_utf8[:5000]
-                # Truncate back to last whitespace to avoid risk of splitting a codepoint
-                texts.append(truncated.rsplit(None, 1)[0].decode("utf-8"))
+                if len(concat_utf8) > 5000:
+                    concat_utf8 = concat_utf8[:5000]
+                    # Truncate back to last whitespace to avoid risk of splitting a codepoint
+                    concat_utf8 = concat_utf8.rsplit(None, 1)[0]
+                texts.append(concat_utf8.decode("utf-8"))
 
             # Run the batch
             response = comprehend.batch_detect_entities(
