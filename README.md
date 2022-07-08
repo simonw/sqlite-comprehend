@@ -39,6 +39,10 @@ You can also used named parameters in your `--where` clause:
 
 Only the first 5,000 characters for each row will be considered. Be sure to review [Comprehend's pricing](https://aws.amazon.com/comprehend/pricing/) - which starts at $0.0001 per hundred characters.
 
+Rows that have been processed are recorded in the `pages_comprehend_entities_done` table. If you run the command more than once it will only process rows that have been newly added.
+
+You can delete records from that `_done` table to run them again.
+
 ### sqlite-comprehend entities --help
 
 <!-- [[[cog

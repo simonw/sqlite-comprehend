@@ -2,9 +2,11 @@ from click.testing import CliRunner
 from unittest.mock import call
 from sqlite_comprehend.cli import cli
 import sqlite_utils
+import pytest
 
 
-def test_entities(mocker, tmpdir):
+@pytest.mark.parametrize("compound_primary_key", (True, False))
+def test_entities(mocker, tmpdir, compound_primary_key):
     db_path = str(tmpdir / "data.db")
     db = sqlite_utils.Database(db_path)
     db["pages"].insert_all(
@@ -18,7 +20,7 @@ def test_entities(mocker, tmpdir):
                 "text": "Sandra X",
             },
         ],
-        pk="id",
+        pk=("id", "text") if compound_primary_key else "id",
     )
     boto3 = mocker.patch("boto3.client")
     boto3.return_value.batch_detect_entities.return_value = {
@@ -96,14 +98,69 @@ def test_entities(mocker, tmpdir):
                 "entity_type": "PERSON",
             },
         ]
-        assert [r for r in db["pages_comprehend_entities_done"].rows] == [
-            {"id": 1},
-            {"id": 2},
-        ]
-
+        if compound_primary_key:
+            assert list(db["pages_comprehend_entities_done"].rows) == [
+                {"id": 1, "text": "John Bob"},
+                {"id": 2, "text": "Sandra X"},
+            ]
+            assert db["pages_comprehend_entities"].schema == (
+                "CREATE TABLE [pages_comprehend_entities] (\n"
+                "   [id] INTEGER,\n"
+                "   [text] TEXT,\n"
+                "   [score] FLOAT,\n"
+                "   [entity] INTEGER REFERENCES [comprehend_entities]([id]),\n"
+                "   [begin_offset] INTEGER,\n"
+                "   [end_offset] INTEGER\n"
+                ")"
+            )
+        else:
+            assert list(db["pages_comprehend_entities_done"].rows) == [
+                {"id": 1},
+                {"id": 2},
+            ]
+            assert db["pages_comprehend_entities"].schema == (
+                "CREATE TABLE [pages_comprehend_entities] (\n"
+                # foreign key reference since only one primary key:
+                "   [id] INTEGER REFERENCES [pages]([id]),\n"
+                "   [score] FLOAT,\n"
+                "   [entity] INTEGER REFERENCES [comprehend_entities]([id]),\n"
+                "   [begin_offset] INTEGER,\n"
+                "   [end_offset] INTEGER\n"
+                ")"
+            )
         assert boto3.mock_calls == [
             call("comprehend"),
             call().batch_detect_entities(
                 TextList=["John Bob", "Sandra X"], LanguageCode="en"
             ),
         ]
+
+    # Running a second time should only process the new record
+    db["pages"].insert(
+        {
+            "id": 3,
+            "text": "Another Row",
+        }
+    )
+    boto3.mock_calls = []
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["entities", db_path, "pages", "text"])
+        assert result.exit_code == 0
+
+    assert boto3.mock_calls == [
+        call("comprehend"),
+        call().batch_detect_entities(TextList=["Another Row"], LanguageCode="en"),
+    ]
+
+    # But running with --reset should make all three calls
+    boto3.mock_calls = []
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["entities", db_path, "pages", "text", "--reset"])
+        assert result.exit_code == 0
+
+    assert boto3.mock_calls == [
+        call("comprehend"),
+        call().batch_detect_entities(
+            TextList=["John Bob", "Sandra X", "Another Row"], LanguageCode="en"
+        ),
+    ]

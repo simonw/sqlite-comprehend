@@ -115,8 +115,22 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
         ", ".join(list(pks) + list(columns)),
         table,
     )
+    where_clauses = []
+    # Clause to skip previously processed rows:
+    if db[done_table].exists():
+        where_clauses.append(
+            "({pks}) not in (select {pks} from {done_table})".format(
+                pks=", ".join(pks),
+                done_table=done_table,
+            )
+        )
     if where:
-        sql += " where {}".format(where)
+        where_clauses.append(where)
+    if where_clauses:
+        sql += " where " + " and ".join(where_clauses)
+
+    print(sql)
+
     rows = db.query(sql, params=dict(params))
 
     # Run a count, for the progress bar
@@ -179,9 +193,7 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
                         ]
                     )
             if to_insert:
-                db[output_table].insert_all(
-                    to_insert, extracts={"type": "comprehend_entity_types"}
-                )
+                db[output_table].insert_all(to_insert)
             db[done_table].insert_all(
                 [{pk: row[pk] for pk in pks} for row in chunk],
                 pk=pks,
