@@ -33,6 +33,8 @@ def cli():
 @common_boto3_options
 def entities(database, table, columns, where, params, output, reset, **boto_options):
     """
+    Detect entities in columns in a table
+
     To extract entities from columns text1 and text2 in mytable:
 
         sqlite-comprehend entities my.db mytable text1 text2

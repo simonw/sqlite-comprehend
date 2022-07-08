@@ -39,6 +39,50 @@ You can also used named parameters in your `--where` clause:
 
 Only the first 5,000 characters for each row will be considered. Be sure to review [Comprehend's pricing](https://aws.amazon.com/comprehend/pricing/) - which starts at $0.0001 per hundred characters.
 
+### sqlite-comprehend entities --help
+
+<!-- [[[cog
+from click.testing import CliRunner
+from sqlite_comprehend import cli
+runner = CliRunner()
+result = runner.invoke(cli.cli, ["entities", "--help"])
+help = result.output.replace("Usage: cli", "Usage: sqlite-comprehend")
+cog.out(
+    "```\n{}\n```".format(help)
+)
+]]] -->
+```
+Usage: sqlite-comprehend entities [OPTIONS] DATABASE TABLE COLUMNS...
+
+  Detect entities in columns in a table
+
+  To extract entities from columns text1 and text2 in mytable:
+
+      sqlite-comprehend entities my.db mytable text1 text2
+
+  To run against just a subset of the rows in the table, add:
+
+      --where "id < :max_id" -p max_id 50
+
+  Results will be written to a table called mytable_comprehend_entities
+
+  To specify a different output table, use -o custom_table_name
+
+Options:
+  --where TEXT                WHERE clause to filter table
+  -p, --param <TEXT TEXT>...  Named :parameters for SQL query
+  -o, --output TEXT           Custom output table
+  -r, --reset                 Start from scratch, ignoring previous results
+  --access-key TEXT           AWS access key ID
+  --secret-key TEXT           AWS secret access key
+  --session-token TEXT        AWS session token
+  --endpoint-url TEXT         Custom endpoint URL
+  -a, --auth FILENAME         Path to JSON/INI file containing credentials
+  --help                      Show this message and exit.
+
+```
+<!-- [[[end]]] -->
+
 ## Schema
 
 Assuming an input table called `pages` the tables created by this tool will have the following schema:
