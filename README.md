@@ -13,6 +13,12 @@ Install this tool using `pip`:
 
     pip install sqlite-comprehend
 
+## Configuration
+
+You will need AWS credentials with the `comprehend:DetectEntities` [IAM permission](https://docs.aws.amazon.com/comprehend/latest/dg/access-control-managing-permissions.html).
+
+You can configure credentials [using these instructions](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html). You can also save them to a JSON or INI configuration file and pass them to the command using `-a credentials.ini`, or pass them using the `--access-key` and `--secret-key` options.
+
 ## Entity extraction
 
 The `sqlite-comprehend entities` command runs entity extraction against every row in the specified table and saves the results to your database.
