@@ -90,9 +90,14 @@ def entities(database, table, columns, where, params, output, **boto_options):
     if where:
         sql += " where {}".format(where)
     rows = db.query(sql, params=dict(params))
-    
+
     # Run a count, for the progress bar
-    count = next(db.query("with t as ({}) select count(*) as c from t".format(sql), params=dict(params)))["c"]
+    count = next(
+        db.query(
+            "with t as ({}) select count(*) as c from t".format(sql),
+            params=dict(params),
+        )
+    )["c"]
 
     with click.progressbar(rows, length=count) as bar:
         # Batch process 25 at a time
@@ -101,7 +106,9 @@ def entities(database, table, columns, where, params, output, **boto_options):
             # Each input is a max of 5,000 utf-8 bytes
             texts = []
             for row in chunk:
-                concat_utf8 = (" ".join((row[column] or "") for column in columns)).encode("utf-8")
+                concat_utf8 = (
+                    " ".join((row[column] or "") for column in columns)
+                ).encode("utf-8")
                 truncated = concat_utf8[:5000]
                 # Truncate back to last whitespace to avoid risk of splitting a codepoint
                 texts.append(truncated.rsplit(None, 1)[0].decode("utf-8"))
@@ -115,10 +122,7 @@ def entities(database, table, columns, where, params, output, **boto_options):
             to_insert = []
             for row, result in zip(chunk, results):
                 entities = result["Entities"]
-                pk_values = {
-                    pk: row[pk]
-                    for pk in pks
-                }
+                pk_values = {pk: row[pk] for pk in pks}
                 to_insert.extend(
                     [
                         dict(
@@ -132,4 +136,6 @@ def entities(database, table, columns, where, params, output, **boto_options):
                         for entity in entities
                     ]
                 )
-            db[output].insert_all(to_insert, extracts={"type": "comprehend_entity_types"})
+            db[output].insert_all(
+                to_insert, extracts={"type": "comprehend_entity_types"}
+            )
