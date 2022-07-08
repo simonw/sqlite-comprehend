@@ -1,4 +1,5 @@
 from click.testing import CliRunner
+from unittest.mock import call
 from sqlite_comprehend.cli import cli
 import sqlite_utils
 
@@ -94,7 +95,9 @@ def test_entities(mocker, tmpdir):
                 "entity_type": "PERSON",
             },
         ]
-        assert [str(c) for c in boto3.mock_calls] == [
-            "call('comprehend')",
-            "call().batch_detect_entities(TextList=['John Bob', 'Sandra X'], LanguageCode='en')",
+        assert boto3.mock_calls == [
+            call("comprehend"),
+            call().batch_detect_entities(
+                TextList=["John Bob", "Sandra X"], LanguageCode="en"
+            ),
         ]
