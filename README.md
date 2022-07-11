@@ -21,7 +21,7 @@ You can see an example database generated using this command here:
 
 ## Configuration
 
-You will need AWS credentials with the `comprehend:DetectEntities` [IAM permission](https://docs.aws.amazon.com/comprehend/latest/dg/access-control-managing-permissions.html).
+You will need AWS credentials with the `comprehend:BatchDetectEntities` [IAM permission](https://docs.aws.amazon.com/comprehend/latest/dg/access-control-managing-permissions.html).
 
 You can configure credentials [using these instructions](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html). You can also save them to a JSON or INI configuration file and pass them to the command using `-a credentials.ini`, or pass them using the `--access-key` and `--secret-key` options.
 
