@@ -5,7 +5,7 @@
 [![Tests](https://github.com/simonw/sqlite-comprehend/workflows/Test/badge.svg)](https://github.com/simonw/sqlite-comprehend/actions?query=workflow%3ATest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/simonw/sqlite-comprehend/blob/master/LICENSE)
 
-Tools for running data in a SQLite database through [AWS Comprehend]()
+Tools for running data in a SQLite database through [AWS Comprehend](https://aws.amazon.com/comprehend/)
 
 ## Installation
 
