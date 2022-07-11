@@ -11,7 +11,7 @@ def cli():
     "Tools for running data in a SQLite database through AWS Comprehend"
 
 
-@cli.command
+@cli.command()
 @click.argument(
     "database",
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False, exists=True),
