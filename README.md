@@ -39,6 +39,10 @@ You can also used named parameters in your `--where` clause:
 
 Only the first 5,000 characters for each row will be considered. Be sure to review [Comprehend's pricing](https://aws.amazon.com/comprehend/pricing/) - which starts at $0.0001 per hundred characters.
 
+If your context includes HTML tags, you can strip them out before extracting entities by adding `--strip-tags`:
+
+    sqlite-comprehend sfms.db pages text --strip-tags
+
 Rows that have been processed are recorded in the `pages_comprehend_entities_done` table. If you run the command more than once it will only process rows that have been newly added.
 
 You can delete records from that `_done` table to run them again.
