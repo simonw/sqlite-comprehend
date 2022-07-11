@@ -13,6 +13,12 @@ Install this tool using `pip`:
 
     pip install sqlite-comprehend
 
+## Demo
+
+You can see an example database generated using this command here:
+
+- https://datasette.simonwillison.net/simonwillisonblog/comprehend_entities
+
 ## Configuration
 
 You will need AWS credentials with the `comprehend:DetectEntities` [IAM permission](https://docs.aws.amazon.com/comprehend/latest/dg/access-control-managing-permissions.html).
