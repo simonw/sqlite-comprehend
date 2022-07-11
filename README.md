@@ -15,9 +15,11 @@ Install this tool using `pip`:
 
 ## Demo
 
-You can see an example database generated using this command here:
+You can see examples of tables generated using this command here:
 
-- https://datasette.simonwillison.net/simonwillisonblog/comprehend_entities
+- [comprehend_entities](https://datasette.simonwillison.net/simonwillisonblog/comprehend_entities) - the extracted entities, classified by type
+- [blog_entry_comprehend_entities](https://datasette.simonwillison.net/simonwillisonblog/blog_entry_comprehend_entities) - a table relating entities to the entries that they appear in
+- [comprehend_entity_types](https://datasette.simonwillison.net/simonwillisonblog/comprehend_entity_types) - a small lookup table of entity types
 
 ## Configuration
 
