@@ -1,5 +1,6 @@
 import click
 import boto3
+from html.parser import HTMLParser
 import json
 import configparser
 
@@ -69,3 +70,41 @@ def make_client(service, access_key, secret_key, session_token, endpoint_url, au
     if endpoint_url:
         kwargs["endpoint_url"] = endpoint_url
     return boto3.client(service, **kwargs)
+
+
+# Adapted from Django's strip_tags() implementation
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.reset()
+        self.accumulated = []
+
+    def handle_data(self, d):
+        self.accumulated.append(d)
+
+    def handle_entityref(self, name):
+        self.accumulated.append("&%s;" % name)
+
+    def handle_charref(self, name):
+        self.accumulated.append("&#%s;" % name)
+
+    def get_string(self):
+        return "".join(self.accumulated)
+
+
+def _strip_once(value):
+    s = MLStripper()
+    s.feed(value)
+    s.close()
+    return s.get_string()
+
+
+def strip_tags(value):
+    value = str(value)
+    while "<" in value and ">" in value:
+        new_value = _strip_once(value)
+        if value.count("<") == new_value.count("<"):
+            # _strip_once wasn't able to detect more tags.
+            break
+        value = new_value
+    return value

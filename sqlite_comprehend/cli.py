@@ -2,7 +2,7 @@ import click
 import sqlite_utils
 import json
 from sqlite_utils.utils import chunks
-from .utils import common_boto3_options, make_client
+from .utils import common_boto3_options, make_client, strip_tags
 
 
 @click.group()
@@ -31,8 +31,24 @@ def cli():
 @click.option(
     "-r", "--reset", is_flag=True, help="Start from scratch, deleting previous results"
 )
+@click.option(
+    "should_strip_tags",
+    "--strip-tags",
+    is_flag=True,
+    help="Strip HTML tags before extracting entities",
+)
 @common_boto3_options
-def entities(database, table, columns, where, params, output, reset, **boto_options):
+def entities(
+    database,
+    table,
+    columns,
+    where,
+    params,
+    output,
+    reset,
+    should_strip_tags,
+    **boto_options
+):
     """
     Detect entities in columns in a table
 
@@ -147,9 +163,10 @@ def entities(database, table, columns, where, params, output, reset, **boto_opti
             # Each input is a max of 5,000 utf-8 bytes
             texts = []
             for row in chunk:
-                concat_utf8 = (
-                    " ".join((row[column] or "") for column in columns)
-                ).encode("utf-8")
+                concat = " ".join((row[column] or "") for column in columns)
+                if should_strip_tags:
+                    concat = strip_tags(concat)
+                concat_utf8 = concat.encode("utf-8")
                 if len(concat_utf8) > 5000:
                     concat_utf8 = concat_utf8[:5000]
                     # Truncate back to last whitespace to avoid risk of splitting a codepoint

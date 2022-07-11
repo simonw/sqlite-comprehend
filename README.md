@@ -77,6 +77,7 @@ Options:
   -p, --param <TEXT TEXT>...  Named :parameters for SQL query
   -o, --output TEXT           Custom output table
   -r, --reset                 Start from scratch, deleting previous results
+  --strip-tags                Strip HTML tags before extracting entities
   --access-key TEXT           AWS access key ID
   --secret-key TEXT           AWS secret access key
   --session-token TEXT        AWS session token

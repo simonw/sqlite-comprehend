@@ -1,6 +1,7 @@
 from click.testing import CliRunner
 from unittest.mock import call
 from sqlite_comprehend.cli import cli
+from sqlite_comprehend.utils import strip_tags
 import sqlite_utils
 import pytest
 
@@ -223,3 +224,16 @@ def test_entities_errors(mocker, tmpdir):
             '\n{"id": 1}: Error: {"Index": 0, "ErrorCode": "InvalidParameterValue",'
             ' "ErrorMessage": "Invalid parameter: text"}\n'
         )
+
+
+@pytest.mark.parametrize(
+    "input,expected",
+    (
+        ("abc", "abc"),
+        ("a < b", "a < b"),
+        ("abc<em>", "abc"),
+        ("<em>a < b</em>", "a < b"),
+    ),
+)
+def test_strip_tags(input, expected):
+    assert strip_tags(input) == expected
