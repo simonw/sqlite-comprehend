@@ -7,6 +7,8 @@
 
 Tools for running data in a SQLite database through [AWS Comprehend](https://aws.amazon.com/comprehend/)
 
+See [sqlite-comprehend: run AWS entity extraction against content in a SQLite database](https://simonwillison.net/2022/Jul/11/sqlite-comprehend/) for background on this project.
+
 ## Installation
 
 Install this tool using `pip`:
